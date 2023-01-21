@@ -7,7 +7,9 @@
 
 <h1>Send Message</h1>
 
-<button class="btn btn-primary" @onclick="SendMessage">Send Message</button>
+<input @bind="Message" @bind:event="oninput" />
+
+<button class="btn btn-primary" @onclick="SendMessageAsync">Send Message</button>
 
 @if (@dateNow != null)
 {
@@ -17,8 +19,9 @@
 @code {
     DateTime? dateNow;
     string? salesQueueName;
+    public string Message { get; set; } = string.Empty;
 
-    private async Task SendMessage()
+    private async Task SendMessageAsync()
     {        
         var connectionString = Configuration["ServiceBus:ConnectionString"];
         salesQueueName = Configuration["ServiceBus:SalesQueueName"];
@@ -27,14 +30,31 @@
         await using var client = new ServiceBusClient(connectionString);
 
         // Create a ServiceBusSender object by invoking the CreateSender method on the ServiceBusClient object, and specifying the queue name.
-        ServiceBusSender sender = client.CreateSender(salesQueueName);
+        await using ServiceBusSender sender = client.CreateSender(salesQueueName);
 
-        // Create a new message to send to the queue.
-        string messageContent = "Order new crankshaft for eBike.";
-        var message = new ServiceBusMessage(messageContent);
+        try
+        {
+            // Create a new message to send to the queue.
+            string messageContent = Message;
+            var message = new ServiceBusMessage(messageContent);
 
-        // Send the message to the queue.
-        await sender.SendMessageAsync(message);
-        dateNow = DateTime.Now;
+            // Send the message to the queue.
+            await sender.SendMessageAsync(message);
+            dateNow = DateTime.Now;
+        }
+        catch (Exception exception)
+        {
+            //<div class="alert alert-danger" role="alert">$"{DateTime.Now} :: Exception: {@exception.Message}"</div>
+            Console.WriteLine($"{DateTime.Now} :: Exception: {@exception.Message}");
+        }
+        finally
+        {
+            Message = string.Empty;
+
+            // Calling DisposeAsync on client types is required to ensure that network
+            // resources and other unmanaged objects are properly cleaned up.
+            await sender.DisposeAsync();
+            await client.DisposeAsync();
+        }        
     }
 }
