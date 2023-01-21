@@ -1,4 +1,7 @@
 ﻿@page "/sendMessage"
+@using Azure.Messaging.ServiceBus;
+
+@inject IConfiguration Configuration;
 
 <PageTitle>Send Message</PageTitle>
 
@@ -8,14 +11,30 @@
 
 @if (@dateNow != null)
 {
-    <p>Button clicked at @dateNow.ToString()</p>
+    <p>Service bus message sent to queue: '@salesQueueName' at @dateNow.ToString()</p>
 }
 
 @code {
     DateTime? dateNow;
+    string? salesQueueName;
 
-    private void SendMessage()
-    {
+    private async Task SendMessage()
+    {        
+        var connectionString = Configuration["ServiceBus:ConnectionString"];
+        salesQueueName = Configuration["ServiceBus:SalesQueueName"];
+
+        // Create a ServiceBusClient object using the connection string to the namespace.
+        await using var client = new ServiceBusClient(connectionString);
+
+        // Create a ServiceBusSender object by invoking the CreateSender method on the ServiceBusClient object, and specifying the queue name.
+        ServiceBusSender sender = client.CreateSender(salesQueueName);
+
+        // Create a new message to send to the queue.
+        string messageContent = "Order new crankshaft for eBike.";
+        var message = new ServiceBusMessage(messageContent);
+
+        // Send the message to the queue.
+        await sender.SendMessageAsync(message);
         dateNow = DateTime.Now;
     }
 }
