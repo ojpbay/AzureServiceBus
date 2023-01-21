@@ -1,0 +1,21 @@
+﻿@page "/sendMessage"
+
+<PageTitle>Send Message</PageTitle>
+
+<h1>Send Message</h1>
+
+<button class="btn btn-primary" @onclick="SendMessage">Send Message</button>
+
+@if (@dateNow != null)
+{
+    <p>Button clicked at @dateNow.ToString()</p>
+}
+
+@code {
+    DateTime? dateNow;
+
+    private void SendMessage()
+    {
+        dateNow = DateTime.Now;
+    }
+}
